@@ -13,8 +13,18 @@ export function Screen({ code }) {
   const fsBtn = html`<button onClick=${fs} style="position:fixed;bottom:14px;right:14px;font-size:12px;font-weight:700;color:rgba(255,255,255,.35);padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.04);z-index:5">Full screen</button>`;
   const vw = 'min(1vw, 1.78vh)';
   const u = (n) => `calc(${n} * ${vw})`;
+  // Late-joiner QR shown on every projector view (the join view has its own large one).
+  const px = (n) => Math.round(n * Math.min(window.innerWidth, window.innerHeight * 1.78) / 100);
+  const lateQR = (n = 10) => html`<div style=${{ display: 'flex', alignItems: 'center', gap: u(1.4), flexShrink: 0 }}>
+    <div style=${{ background: '#fff', borderRadius: u(1), padding: u(0.4), flexShrink: 0 }}><${QR} text=${joinUrl(code, data.base)} size=${px(n)} /></div>
+    <div style=${{ lineHeight: 1.2 }}>
+      <div style=${{ fontSize: u(1.9), fontWeight: 900 }}>Joining late?</div>
+      <div style=${{ fontSize: u(1.5), color: 'rgba(255,255,255,.6)', marginTop: u(0.3) }}>Scan, or go to</div>
+      <div style=${{ fontSize: u(1.6), fontWeight: 800 }}>${prettyLink(code, data.base)}</div>
+      <div class="mono" style=${{ fontSize: u(2.4), fontWeight: 900, letterSpacing: '.1em', marginTop: u(0.4) }}>${code}</div>
+    </div></div>`;
 
-  if (mode === 'off') return html`<div class="screen" style="display:flex;align-items:center;justify-content:center;gap:${u(2)};flex-direction:column"><${Dots} size=${18} /><div style=${{ fontSize: u(3), fontWeight: 900, color: 'rgba(255,255,255,.25)' }}>Wavelength</div>${fsBtn}</div>`;
+  if (mode === 'off') return html`<div class="screen" style="display:flex;align-items:center;justify-content:center;gap:${u(2)};flex-direction:column"><${Dots} size=${18} /><div style=${{ fontSize: u(3), fontWeight: 900, color: 'rgba(255,255,255,.25)' }}>Wavelength</div><div style=${{ position: 'fixed', left: u(3), bottom: u(3), opacity: 0.85 }}>${lateQR(9)}</div>${fsBtn}</div>`;
 
   if (mode === 'join' || !meta.launched && mode !== 'groups' && mode !== 'instructions') {
     return html`<div class="screen" style="background:radial-gradient(120% 120% at 20% 0%,#1c1f2b 0%,#0c0d12 65%);display:flex;align-items:center;justify-content:center;padding:${u(4)}">
@@ -43,10 +53,10 @@ export function Screen({ code }) {
     const pad = rows > 2 ? 0.9 : 1.6, inner = (94 - (perRow - 1) * (rows > 2 ? 0.9 : 1.4)) / perRow - pad * 2;
     const longName = Math.max(4, ...data.roster.map(p => short(p.name).length));
     const longHead = Math.max(...cols.map((_, g) => (G(g).name + (G(g).num > 1 ? ' ' + G(g).num : '')).length));
-    const nameFs = Math.max(0.8, Math.min(1.85, 44 / rows / (most + 2.6) / 1.45, inner / (0.56 * longName)));
+    const nameFs = Math.max(0.8, Math.min(1.85, 40 / rows / (most + 2.6) / 1.45, inner / (0.56 * longName)));
     const headFs = Math.max(1.1, Math.min(2.4, 6.5 / Math.sqrt(rows), (inner - 0.8) / (1 + 0.62 * longHead)));
     return html`<div class="screen" style=${{ padding: u(3), display: 'flex', flexDirection: 'column', gap: u(2) }}>
-      <div style=${{ display: 'flex', alignItems: 'baseline', gap: u(2) }}><div style=${{ fontSize: u(4), fontWeight: 900 }}>Find your group</div><div style=${{ fontSize: u(1.8), color: 'rgba(255,255,255,.55)' }}>${data.roster.length} students · ${n} groups</div></div>
+      <div style=${{ display: 'flex', alignItems: 'baseline', gap: u(2), flexShrink: 0 }}><div style=${{ fontSize: u(4), fontWeight: 900 }}>Find your group</div><div style=${{ fontSize: u(1.8), color: 'rgba(255,255,255,.55)' }}>${data.roster.length} students · ${n} groups</div><div style=${{ marginLeft: 'auto', alignSelf: 'center' }}>${lateQR(7)}</div></div>
       <div style=${{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${perRow}, minmax(0,1fr))`, gridAutoRows: 'minmax(0,1fr)', gap: u(rows > 2 ? 0.9 : 1.4), minHeight: 0 }}>${cols.map((ms, g) => { const k = G(g); return html`<div style=${{ background: k.base + '1f', border: '2px solid ' + k.base + '88', borderRadius: u(1.4), padding: u(rows > 2 ? 0.9 : 1.6), overflow: 'hidden', minHeight: 0 }}>
         <div style=${{ display: 'flex', alignItems: 'center', gap: u(0.8), fontSize: u(headFs), fontWeight: 900, color: k.soft, whiteSpace: 'nowrap', overflow: 'hidden' }}><${Shape} g=${g} size=${Math.round(headFs * 9)} />${k.name}${k.num > 1 ? ' ' + k.num : ''}</div>
         <div style=${{ fontSize: u(Math.max(0.9, headFs * 0.55)), color: 'rgba(255,255,255,.55)', marginBottom: u(0.6), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>${k.shapeLabel} · ${ms.length}</div>
@@ -68,6 +78,6 @@ export function Screen({ code }) {
       ${meta.pushedPrompt && html`<div style=${{ marginTop: u(2), background: '#fff', color: '#101116', borderRadius: u(2), padding: u(2.4), fontSize: u(3), fontWeight: 800, lineHeight: 1.25 }}>${meta.pushedPrompt}</div>`}
       ${meta.calledNum && key === 'molecules' && html`<div style=${{ fontSize: u(8), fontWeight: 900, lineHeight: 1 }}>Groups of ${meta.calledNum}</div>`}
     </div>
-    <div style=${{ display: 'flex', justifyContent: 'space-between', fontSize: u(1.6), color: 'rgba(255,255,255,.45)' }}><span>Joining late? Scan at ${prettyLink(code, data.base)} · code <b class="mono">${code}</b></span><span>${T.next && !meta.ended ? 'Up next: ' + T.next.name : ''}</span></div>
+    <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: u(3) }}>${!meta.ended ? lateQR(10) : html`<span />`}<span style=${{ fontSize: u(1.8), color: 'rgba(255,255,255,.5)', paddingRight: u(8) }}>${T.next && !meta.ended ? 'Up next: ' + T.next.name : ''}</span></div>
     ${fsBtn}</div>`;
 }
