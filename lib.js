@@ -162,12 +162,13 @@ export function GuideSheet({ k, onClose, showSay, say, onProj }) {
       <div class="grab"></div>
       <div style="display:flex;align-items:center;gap:12px">
         <span style=${{ width: '30px', height: '30px', borderRadius: '50%', background: gd.color, flexShrink: 0 }}></span>
-        <div style="flex:1"><div style="font-size:24px;font-weight:900;line-height:1">${gd.name}</div><div style="font-size:13.5px;color:rgba(255,255,255,.6);margin-top:3px">${gd.tagline}</div></div>
+        <div style="flex:1"><div style="font-size:24px;font-weight:900;line-height:1">${gd.name}</div><div style="font-size:13.5px;color:rgba(255,255,255,.6);margin-top:3px">${gd.tagline}${gd.type ? ' · ' + (gd.type === 'learning' ? 'Learning' : 'Connecting') : ''}</div></div>
         <button onClick=${onClose} aria-label="Close" style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.08);font-size:18px">×</button>
       </div>
       <div style="display:flex;gap:8px;margin-top:18px">
         ${[[gd.size, 'Group'], [gd.time, 'Time'], [gd.setting, 'Setting']].map(([v, l]) => html`<div style="flex:1;background:#1f2027;border-radius:12px;padding:11px 8px;text-align:center"><div style="font-size:13px;font-weight:800">${v}</div><div style="font-size:10.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-top:2px">${l}</div></div>`)}
       </div>
+      ${showSay && gd.tip && html`<div style="background:rgba(245,163,0,.1);border:1px solid rgba(245,163,0,.35);border-radius:16px;padding:14px 16px;margin-top:16px;font-size:14px;line-height:1.45;color:#f5d08a"><b>Setup · </b>${gd.tip}</div>`}
       ${showSay && html`<div style="background:rgba(46,107,255,.14);border:1px solid rgba(111,155,255,.4);border-radius:16px;padding:16px;margin-top:16px">
         <div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#9fb9ff">Say this</div>
         <div style="font-size:16px;line-height:1.5;margin-top:6px">“${say}”</div>

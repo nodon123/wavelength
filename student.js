@@ -1,5 +1,5 @@
 import { html, useState, useEffect, useRef } from './vendor/preact-htm.js';
-import { G, gLabel, info, GAMES } from './content.js';
+import { G, gLabel, info, GAMES, STANCES } from './content.js';
 import { ls, normCode, first, short, fmt, post, usePoll, useTick, timing, Toggle, Dots, useToast, colorVars, GuideSheet, Shape } from './lib.js';
 
 // Sharing is off until the student turns it on.
@@ -191,7 +191,8 @@ function StudentApp({ code, sid, skey, policy, profile, setProfile, lateIntro, o
   }, [me && me.g]);
   useEffect(() => { setAfter(!!(meta && meta.ended)); }, [meta && meta.ended]);
   const segKey = meta ? (meta.agenda[meta.seg] || {}).key + ':' + meta.seg : null;
-  useEffect(() => { if (segKey && lastSeg.current && lastSeg.current !== segKey) { setCoachOpen(true); setTab('now'); } lastSeg.current = segKey; }, [segKey]);
+  const scrollRef = useRef(null);
+  useEffect(() => { if (segKey && lastSeg.current && lastSeg.current !== segKey) { setCoachOpen(true); setTab('now'); if (scrollRef.current) scrollRef.current.scrollTop = 0; } lastSeg.current = segKey; }, [segKey]);
 
   if (errCode === 'rejoin') return html`<div class="phone dark-bg"><div class="pad" style="justify-content:center;gap:16px"><div class="h1">Rejoin on this phone</div><div class="sub">This phone isn’t signed in to the class anymore. Rejoin to get your group back.</div><button class="btn btn-white" onClick=${onRejoin}>Rejoin class</button></div></div>`;
   if (error && !data) return html`<div class="phone dark-bg"><div class="pad" style="justify-content:center;gap:16px"><div class="h1">Can't reach the class</div><div class="sub">${error}</div><button class="btn btn-white" onClick=${refresh}>Try again</button></div></div>`;
@@ -219,7 +220,8 @@ function StudentApp({ code, sid, skey, policy, profile, setProfile, lateIntro, o
   };
   const doneBtn = canDone && html`<${DoneButton} done=${isDone} onClick=${toggleDone} />`;
   const showWrap = meta.ended || segItem.key === 'wrap';
-  const groupTalk = canDone && segItem.key !== 'biography' && pool.length > 0;
+  const groupTalk = canDone && segItem.key !== 'biography' && !seg.card && pool.length > 0;
+  const cardOn = meta.launched && !meta.ended && isGame && seg.card;
 
   const incoming = (me.connections && me.connections.incoming) || [];
   const saveProfile = async (patch) => {
@@ -252,7 +254,7 @@ function StudentApp({ code, sid, skey, policy, profile, setProfile, lateIntro, o
         <span style="font-size:12px;font-weight:800;color:rgba(16,17,22,.45);align-self:flex-start;padding-top:2px">${coachOpen ? 'Hide' : 'Show'}</span>
       </button></div>`}
 
-    <div style=${{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', zoom: big ? 1.2 : 1 }}>
+    <div ref=${scrollRef} style=${{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', zoom: big ? 1.2 : 1 }}>
       ${tab === 'now' && html`<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px">
         ${moved && html`<div class="card-white" style="display:flex;align-items:center;gap:12px;padding:16px 18px"><span style="flex:1;font-size:16px;font-weight:800;line-height:1.3">New group: <${Shape} g=${g} size=${16} /> ${gLabel(g)}. Find phones showing your new color.</span><button class="btn-sm" style="background:var(--cd);color:#fff" onClick=${() => setMoved(false)}>Got it</button></div>`}
         ${lateCard && meta.launched && html`<div class="card-white"><div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.55">Joined mid-class · you haven't missed anything important</div>
@@ -263,9 +265,11 @@ function StudentApp({ code, sid, skey, policy, profile, setProfile, lateIntro, o
           <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.78)"><span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:wl-livedot 1.4s infinite"></span>${meta.launched ? 'Happening now' : 'Before class'} · ${segLeftLabel}</div>
           <div style="font-size:34px;font-weight:900;letter-spacing:-1.2px;line-height:1.04;margin-top:10px">${meta.launched ? seg.name : 'Class starts soon'}</div>
           <div style="font-size:16.5px;color:rgba(255,255,255,.88);margin-top:8px;line-height:1.4">${meta.launched ? seg.do : 'You’re in. Say hi to someone near you while everyone joins.'}</div>
-          ${meta.launched && isGame && html`<button class="btn-sm" style="margin-top:16px;background:#fff;color:var(--cd);border-radius:30px" onClick=${() => setSheet('guide')}>How to play</button>`}
+          ${meta.launched && isGame && html`<button class="btn-sm" style="margin-top:16px;background:#fff;color:var(--cd);border-radius:30px" onClick=${() => setSheet('guide')}>More about this game</button>`}
         </div>`}
-        ${meta.pushedPrompt && html`<div class="card-white"><div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.6">From your instructor</div><div style="font-size:21px;font-weight:800;line-height:1.25;margin-top:8px">${meta.pushedPrompt}</div></div>`}
+        ${cardOn && html`<${GameCard} seg=${seg} prompts=${prompts} g=${g} pushed=${meta.pushedPrompt} />`}
+        ${meta.launched && !meta.ended && isGame && html`<${StepList} steps=${seg.steps} />`}
+        ${meta.pushedPrompt && !(cardOn && seg.card.kind === 'stance') && html`<div class="card-white"><div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.6">From your instructor</div><div style="font-size:21px;font-weight:800;line-height:1.25;margin-top:8px">${meta.pushedPrompt}</div></div>`}
         ${groupTalk && html`<${TalkPrompt} pool=${pool} />`}
         ${meta.launched && !meta.ended && segItem.key === 'biography' && html`<${BioStream} auth=${auth} me=${me} g=${g} mates=${mates} toast=${showToast} refresh=${refresh} />`}
         ${doneBtn}
@@ -438,12 +442,12 @@ function ColorFull({ C, g, mates, onClose }) {
 }
 
 // A rotating conversation prompt for group discussions.
-function TalkPrompt({ pool }) {
+function TalkPrompt({ pool, title = 'Talk about this with your group', more = 'New prompt →' }) {
   const [i, setI] = useState(0);
   return html`<div class="card-white">
-    <div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.55">Talk about this with your group</div>
+    <div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.55">${title}</div>
     <div style="font-size:21px;font-weight:800;line-height:1.25;margin-top:6px">${pool[i % pool.length]}</div>
-    ${pool.length > 1 && html`<button onClick=${() => setI(i + 1)} style="margin-top:8px;min-height:44px;font-size:14px;font-weight:800;text-decoration:underline;color:var(--cd)">New prompt →</button>`}
+    ${pool.length > 1 && html`<button onClick=${() => setI(i + 1)} style="margin-top:8px;min-height:44px;font-size:14px;font-weight:800;text-decoration:underline;color:var(--cd)">${more}</button>`}
   </div>`;
 }
 
@@ -543,5 +547,53 @@ function ConnectTab({ auth, policy, data, me, profile, saveProfile, toast, refre
       ${x.linkedin && html`<a href=${/^https?:/.test(x.linkedin) ? x.linkedin : 'https://' + x.linkedin} target="_blank" rel="noopener" style="font-size:12px;font-weight:800;background:rgba(255,255,255,.16);padding:8px 12px;border-radius:20px;color:#fff;text-decoration:none">LinkedIn</a>`}
       <button class="btn-sm" style="color:rgba(255,255,255,.6);padding:0 8px" aria-label=${'Remove ' + x.name} onClick=${() => { if (confirm('Remove ' + x.name + ' from your connections?')) call({ op: 'cancel', id: x.id }, 'Connection removed'); }}>×</button>
     </div>`)}
+  </div>`;
+}
+
+// Numbered steps shown right on the Now screen, so students don't have to open a sheet to know what to do.
+function StepList({ steps }) {
+  if (!steps || !steps.length) return null;
+  return html`<div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:11.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.7)">What you do</div>
+    ${steps.map((t, i) => html`<div style="display:flex;gap:11px;align-items:flex-start"><span style="width:24px;height:24px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,.22);font-size:12.5px;font-weight:900;display:flex;align-items:center;justify-content:center">${i + 1}</span><span style="font-size:15px;line-height:1.38;padding-top:2px">${t}</span></div>`)}
+  </div>`;
+}
+
+// Activity-specific cards (stance, group item, ideas, personal list).
+function GameCard({ seg, prompts, g, pushed }) {
+  const c = seg.card, eyebrow = (t) => html`<div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.55">${t}</div>`;
+  if (c.kind === 'examples') return prompts.length ? html`<${TalkPrompt} pool=${prompts} title=${c.title} more=${c.more} />` : null;
+  if (c.kind === 'list') return html`<${MyList} k=${seg.key} n=${c.n} />`;
+  if (c.kind === 'group') {
+    if (!prompts.length) return null;
+    return html`<div class="card-white">${eyebrow(c.title)}
+      <div style="font-size:23px;font-weight:900;line-height:1.22;margin-top:8px">${prompts[g % prompts.length]}</div>
+      ${c.note && html`<div style="font-size:14px;opacity:.65;margin-top:8px;line-height:1.4">${c.note}</div>`}</div>`;
+  }
+  if (c.kind === 'stance') {
+    const statement = pushed || prompts[0];
+    const si = g % STANCES.length;
+    return html`<div class="card-white">
+      ${statement && html`${eyebrow('The statement')}<div style="font-size:19px;font-weight:800;line-height:1.3;margin-top:6px">“${statement}”</div>`}
+      <div style="margin-top:16px;background:var(--cd);color:#fff;border-radius:16px;padding:16px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.75">Your team argues</div>
+        <div style="font-size:28px;font-weight:900;line-height:1.1;margin-top:4px">${STANCES[si]}</div>
+        <div style="font-size:13.5px;opacity:.85;margin-top:8px;line-height:1.4">Argue this even if you don’t believe it. You’ll share your real opinion at the end.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px">${STANCES.map((t, i) => html`<div style=${{ fontSize: '12px', fontWeight: 700, padding: '7px 9px', borderRadius: '10px', background: i === si ? 'rgba(16,17,22,.1)' : 'rgba(16,17,22,.04)', opacity: i === si ? 1 : .6 }}>${i === si ? '● ' : ''}${t}</div>`)}</div>
+    </div>`;
+  }
+  return null;
+}
+
+// A short personal list kept on this phone only (e.g. Stranded's 5 items).
+function MyList({ k, n }) {
+  const key = 'wl:list:' + k;
+  const [items, setItems] = useState(() => { const v = ls.get(key, []); return Array.from({ length: n }, (_, i) => v[i] || ''); });
+  const set = (i, v) => { const a = items.map((x, j) => j === i ? v : x); setItems(a); ls.set(key, a); };
+  return html`<div class="card-white">
+    <div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.55">Your ${n} items</div>
+    <div style="font-size:13.5px;opacity:.65;margin-top:4px">Stays on this phone. Read it to your group.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${items.map((v, i) => html`<div style="display:flex;align-items:center;gap:10px"><span style="width:24px;font-weight:900;color:var(--cd)">${i + 1}</span><input class="field" style="padding:11px 13px;font-size:15px;background:rgba(16,17,22,.05);color:#101116;border-color:rgba(16,17,22,.12)" value=${v} onInput=${e => set(i, e.target.value)} placeholder=${'Item ' + (i + 1)} maxlength="60" /></div>`)}</div>
   </div>`;
 }
