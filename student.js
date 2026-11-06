@@ -220,7 +220,9 @@ function StudentApp({ code, sid, skey, policy, profile, setProfile, lateIntro, o
   };
   const doneBtn = canDone && html`<${DoneButton} done=${isDone} onClick=${toggleDone} />`;
   const showWrap = meta.ended || segItem.key === 'wrap';
-  const groupTalk = canDone && segItem.key !== 'biography' && !seg.card && pool.length > 0;
+  // One discussion prompt per group: the instructor's pushed prompt replaces the default (first) one. Two Truths and a Lie only shows a pushed theme.
+  const talkText = meta.pushedPrompt || (segItem.key === 'truths' ? null : pool[0]);
+  const groupTalk = canDone && segItem.key !== 'biography' && !seg.card && !!talkText;
   const cardOn = meta.launched && !meta.ended && isGame && seg.card;
 
   const incoming = (me.connections && me.connections.incoming) || [];
@@ -238,7 +240,7 @@ function StudentApp({ code, sid, skey, policy, profile, setProfile, lateIntro, o
         <span class="orb" style="width:58px;height:58px;flex-shrink:0;box-shadow:0 0 0 3px rgba(255,255,255,.28)"><${Shape} g=${g} size=${27} /></span>
         <span style="min-width:0;flex:1"><span style="display:block;font-size:12.5px;color:rgba(255,255,255,.78);font-weight:600">Hi ${first(me.name)} · your group</span>
           <span style="display:block;font-size:21px;font-weight:900;letter-spacing:-.3px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${gLabel(g)}</span>
-          <span style="display:block;font-size:12.5px;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mates.length ? 'With ' + mates.map(m => first(m.name)).join(', ') : 'Tap to hold up your color'}</span></span>
+          <span style="display:block;font-size:12.5px;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mates.length ? 'With ' + mates.map(m => short(m.name)).join(', ') : 'Tap to hold up your color'}</span></span>
       </button>
       <div style="display:flex;gap:8px">
         <button onClick=${() => setBig(!big)} aria-label="Larger text" style=${{ width: '44px', height: '44px', borderRadius: '50%', background: big ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.14)', fontWeight: 800, fontSize: '15px' }}>Aa</button>
@@ -258,7 +260,7 @@ function StudentApp({ code, sid, skey, policy, profile, setProfile, lateIntro, o
       ${tab === 'now' && html`<div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px">
         ${moved && html`<div class="card-white" style="display:flex;align-items:center;gap:12px;padding:16px 18px"><span style="flex:1;font-size:16px;font-weight:800;line-height:1.3">New group: <${Shape} g=${g} size=${16} /> ${gLabel(g)}. Find phones showing your new color.</span><button class="btn-sm" style="background:var(--cd);color:#fff" onClick=${() => setMoved(false)}>Got it</button></div>`}
         ${lateCard && meta.launched && html`<div class="card-white"><div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.55">Joined mid-class · you haven't missed anything important</div>
-          <div style="font-size:15.5px;font-weight:700;margin-top:8px;line-height:1.4">Look for: ${mates.slice(0, 5).map(m => first(m.name)).join(', ') || 'your color on other phones'}</div>
+          <div style="font-size:15.5px;font-weight:700;margin-top:8px;line-height:1.4">Look for: ${mates.slice(0, 5).map(m => short(m.name)).join(', ') || 'your color on other phones'}</div>
           <button class="btn-sm" style="margin-top:12px;background:var(--cd);color:#fff" onClick=${() => setLateCard(false)}>Got it</button></div>`}
         ${meta.ended && html`<${EndCard} me=${me} onConnect=${() => setTab('connect')} />`}
         ${!meta.ended && html`<div class="card" style="padding:22px">
@@ -269,14 +271,14 @@ function StudentApp({ code, sid, skey, policy, profile, setProfile, lateIntro, o
         </div>`}
         ${cardOn && html`<${GameCard} seg=${seg} prompts=${prompts} g=${g} pushed=${meta.pushedPrompt} />`}
         ${meta.launched && !meta.ended && isGame && html`<${StepList} steps=${seg.steps} />`}
-        ${meta.pushedPrompt && !(cardOn && seg.card.kind === 'stance') && html`<div class="card-white"><div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.6">From your instructor</div><div style="font-size:21px;font-weight:800;line-height:1.25;margin-top:8px">${meta.pushedPrompt}</div></div>`}
-        ${groupTalk && html`<${TalkPrompt} pool=${pool} />`}
+        ${meta.pushedPrompt && !groupTalk && !(cardOn && seg.card.kind === 'stance') && html`<div class="card-white"><div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.6">From your instructor</div><div style="font-size:21px;font-weight:800;line-height:1.25;margin-top:8px">${meta.pushedPrompt}</div></div>`}
+        ${groupTalk && html`<div class="card-white"><div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.55">${meta.pushedPrompt ? (segItem.key === 'truths' ? 'Theme from your instructor' : 'From your instructor') : 'Talk about this with your group'}</div><div style="font-size:21px;font-weight:800;line-height:1.25;margin-top:6px">${talkText}</div></div>`}
         ${meta.launched && !meta.ended && segItem.key === 'biography' && html`<${BioStream} auth=${auth} me=${me} g=${g} mates=${mates} toast=${showToast} refresh=${refresh} />`}
         ${doneBtn}
         ${meta.calledNum && segItem.key === 'molecules' && html`<div class="card-white" style="text-align:center"><div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.6">Make a group of</div><div style="font-size:72px;font-weight:900;line-height:1">${meta.calledNum}</div></div>`}
         ${incoming.length > 0 && !showWrap && html`<button onClick=${() => setTab('connect')} class="card-white" style="display:flex;align-items:center;gap:12px;text-align:left;color:var(--cd)"><span style="flex:1;font-size:15.5px;font-weight:800;line-height:1.3">${incoming.length === 1 ? first(incoming[0].name) + ' wants to connect' : incoming.length + ' classmates want to connect'}</span><span class="btn-sm" style="background:var(--cd);color:#fff">Review</span></button>`}
         ${(!meta.launched || segItem.key === 'welcome') && html`<${IntroQuestions} auth=${auth} meta=${meta} me=${me} anon=${profile.anon} onAnon=${() => saveProfile({ anon: !profile.anon })} toast=${showToast} refresh=${refresh} />`}
-        ${meta.launched && segItem.key === 'truths' && html`<${Truths} />`}
+        ${meta.launched && !meta.ended && segItem.key === 'truths' && html`<${TruthsExample} />`}
         ${showWrap && html`<${WrapPick} auth=${auth} data=${data} me=${me} profile=${profile} toast=${showToast} refresh=${refresh} />`}
         ${meta.launched && !meta.ended && html`<div style="display:flex;align-items:center;gap:12px;padding:4px 4px 0;color:rgba(255,255,255,.7);font-size:13.5px"><span style="font-weight:700">Up next</span><span style="flex:1;height:1px;background:rgba(255,255,255,.22)"></span><span>${T.next ? T.next.name : 'You’re all set'}</span></div>`}
       </div>`}
@@ -292,7 +294,7 @@ function StudentApp({ code, sid, skey, policy, profile, setProfile, lateIntro, o
     ${sheet === 'privacy' && html`<div class="sheet-wrap"><button class="scrim" aria-label="Close" onClick=${() => setSheet(null)}></button><div class="sheet">
       <div class="grab"></div><div style="font-size:22px;font-weight:900">About your privacy</div>
       <div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:8px;line-height:1.5">You always know where an answer goes before you send it.</div>
-      ${[['Everyone in class', 'rgba(255,255,255,.85)', 'Your name and your group color.'], ['Teacher only', '#9db8ff', 'Your get-to-know-you answers. Turn on anonymous and your name is left off.'], ['Connections you accept', '#ffd37a', 'Only the contact info you choose to share, and only after you both agree to connect. It’s also the only contact info in your teacher’s roster export.'], ['Stays on this phone', '#6fe3ab', 'Your two truths.']].map(([t, c, d]) => html`<div style="background:#1f2027;border-radius:14px;padding:13px 15px;margin-top:10px"><div style=${{ fontSize: '11.5px', fontWeight: 800, textTransform: 'uppercase', color: c }}>● ${t}</div><div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:5px;line-height:1.4">${d}</div></div>`)}
+      ${[['Everyone in class', 'rgba(255,255,255,.85)', 'Your name and your group color.'], ['Teacher only', '#9db8ff', 'Your get-to-know-you answers. Turn on anonymous and your name is left off.'], ['Connections you accept', '#ffd37a', 'Only the contact info you choose to share, and only after you both agree to connect. It’s also the only contact info in your teacher’s roster export.']].map(([t, c, d]) => html`<div style="background:#1f2027;border-radius:14px;padding:13px 15px;margin-top:10px"><div style=${{ fontSize: '11.5px', fontWeight: 800, textTransform: 'uppercase', color: c }}>● ${t}</div><div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:5px;line-height:1.4">${d}</div></div>`)}
     </div></div>`}
     ${toast}
   </div>`;
@@ -328,18 +330,11 @@ function IntroQuestions({ auth, meta, me, anon, onAnon, toast, refresh }) {
   </div>`;
 }
 
-function Truths() {
-  const [t, setT] = useState(() => ls.get('wl:truths', { a: '', b: '', done: false }));
-  const save = (n) => { setT(n); ls.set('wl:truths', n); };
-  if (t.done) return html`<div style="background:rgba(84,214,141,.18);border:1px solid rgba(84,214,141,.42);border-radius:20px;padding:16px 18px;font-weight:700;font-size:14.5px">
-    <div>✓ Locked in. Find a partner with a different color.</div>
-    <div style="font-weight:600;margin-top:10px;line-height:1.5">1. ${t.a}<br />2. ${t.b}</div>
-    <button class="btn-sm" style="margin-top:10px;background:rgba(255,255,255,.14)" onClick=${() => save({ ...t, done: false })}>Edit</button></div>`;
-  return html`<div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span class="eyebrow" style="color:rgba(255,255,255,.75)">Your two truths</span><span class="chip" style="background:rgba(255,255,255,.16);font-size:10px">Stays on this phone</span></div>
-    <input class="field" style="margin-top:14px;background:rgba(255,255,255,.1)" value=${t.a} onInput=${e => save({ ...t, a: e.target.value })} placeholder="Truth #1" />
-    <input class="field" style="margin-top:10px;background:rgba(255,255,255,.1)" value=${t.b} onInput=${e => save({ ...t, b: e.target.value })} placeholder="Truth #2" />
-    <button class="btn" style="margin-top:14px;min-height:50px;font-size:15px;background:#fff;color:var(--cd)" disabled=${!t.a.trim() || !t.b.trim()} onClick=${() => save({ ...t, done: true })}>Ready to trade</button>
+function TruthsExample() {
+  return html`<div class="card-white">
+    <div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.55">Example · said out loud, nothing to type</div>
+    <div style="font-size:17.5px;font-weight:800;line-height:1.45;margin-top:8px">“I’ve been to 4 countries. I have a twin. I’ve never seen snow.”</div>
+    <div style="font-size:14px;opacity:.65;margin-top:8px;line-height:1.4">Your partner guesses which one is the lie. Your three can be about anything: places, things you’ve done, odd facts about you.</div>
   </div>`;
 }
 
@@ -436,7 +431,7 @@ function ColorFull({ C, g, mates, onClose }) {
   return html`<div class="color-bg" role="dialog" aria-label=${'Your group: ' + C.label} style=${{ ...colorVars(g), position: 'fixed', inset: 0, zIndex: 90, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '28px', padding: '24px 30px 110px' }} onClick=${onClose}>
     <div class="orb" style="width:236px;height:236px;animation:wl-glow 3s ease-in-out infinite"><${Shape} g=${g} size=${104} /></div>
     <div style="text-align:center"><div style="font-size:66px;font-weight:900;letter-spacing:-2px;line-height:1">${C.name}</div><div style="font-size:24px;font-weight:800;margin-top:8px"><${Shape} g=${g} size=${22} /> ${C.shapeLabel}</div></div>
-    ${mates.length > 0 && html`<div style="text-align:center;font-size:15px;color:rgba(255,255,255,.88);line-height:1.5;max-width:320px">With ${mates.map(m => first(m.name)).join(', ')}</div>`}
+    ${mates.length > 0 && html`<div style="text-align:center;font-size:15px;color:rgba(255,255,255,.88);line-height:1.5;max-width:320px">With ${mates.map(m => short(m.name)).join(', ')}</div>`}
     <button onClick=${onClose} class="btn btn-white" style="position:absolute;left:20px;right:20px;bottom:24px;width:auto;color:var(--cd)">Back</button>
   </div>`;
 }
@@ -468,7 +463,7 @@ function BioStream({ auth, me, g, mates, toast, refresh }) {
     <div>
       <div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.55">Your group's biography · ${gLabel(g)}</div>
       <div style="font-size:22px;font-weight:900;letter-spacing:-.4px;line-height:1.15;margin-top:6px">What's true for all of you?</div>
-      <div style="font-size:13px;opacity:.7;margin-top:4px;line-height:1.4">One shared answer for ${mates.length ? 'you, ' + mates.map(m => first(m.name)).join(', ') : 'your group'}. Anyone in the group can add, edit or remove a sentence. Only your group sees it.</div>
+      <div style="font-size:13px;opacity:.7;margin-top:4px;line-height:1.4">One shared answer for ${mates.length ? 'you, ' + mates.map(m => short(m.name)).join(', ') : 'your group'}. Anyone in the group can add, edit or remove a sentence. Only your group sees it.</div>
     </div>
     <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px">
       ${lines.map((l, i) => editing && editing.id === l.id

@@ -230,19 +230,19 @@ async function facilitatorAction(code, body, now) {
   const saveStudents = (list) => { const flat = []; list.forEach(p => flat.push(p.id, JSON.stringify(p))); if (flat.length) cmds.push(['HSET', K(code, 's'), ...flat]); };
   const saveGroups = (list) => { const flat = []; list.forEach(p => { if (st.groups[p.id] != null) flat.push(p.id, String(st.groups[p.id])); }); if (flat.length) cmds.push(['HSET', K(code, 'g'), ...flat]); };
   switch (a) {
-    case 'start': cmds.push(['SET', K(code, 'open'), String(now), 'NX']); m.round = (m.round || 0) + 1; Object.assign(m, { launched: true, ended: false, seg: 0, segAccum: 0, segStartedAt: now, running: true, pushedPrompt: null, projMode: 'instructions', projKey: null, priorMs: 0 }); break;
+    case 'start': cmds.push(['SET', K(code, 'open'), String(now), 'NX']); m.round = (m.round || 0) + 1; Object.assign(m, { launched: true, ended: false, seg: 0, segAccum: 0, segStartedAt: now, running: true, pushedPrompt: null, shownPrompts: [], projMode: 'instructions', projKey: null, priorMs: 0 }); break;
     case 'next': {
       m.round = (m.round || 0) + 1;
       m.priorMs = (m.priorMs || 0) + elapsed();
       if (m.seg >= m.agenda.length - 1) Object.assign(m, { ended: true, running: false, segAccum: 0, segStartedAt: null });
-      else Object.assign(m, { seg: m.seg + 1, segAccum: 0, segStartedAt: now, running: true, pushedPrompt: null, projKey: null, calledNum: null });
+      else Object.assign(m, { seg: m.seg + 1, segAccum: 0, segStartedAt: now, running: true, pushedPrompt: null, shownPrompts: [], projKey: null, calledNum: null });
       break;
     }
     case 'pause': if (m.running) { m.segAccum = elapsed(); m.running = false; m.segStartedAt = null; } break;
     case 'resume': if (!m.running && m.launched && !m.ended) { m.running = true; m.segStartedAt = now; } break;
     case 'addMin': if (m.agenda[m.seg]) m.agenda[m.seg].mins += 1; break;
     case 'proj': m.projMode = ['join', 'instructions', 'groups', 'off'].includes(body.mode) ? body.mode : 'join'; m.projKey = body.key || null; break;
-    case 'push': m.pushedPrompt = body.text ? clean(body.text, 300) : null; if (m.pushedPrompt) m.round = (m.round || 0) + 1; break;
+    case 'push': m.pushedPrompt = body.text ? clean(body.text, 300) : null; if (m.pushedPrompt) { m.round = (m.round || 0) + 1; const sp = Array.isArray(m.shownPrompts) ? m.shownPrompts : []; if (!sp.includes(m.pushedPrompt)) sp.push(m.pushedPrompt); m.shownPrompts = sp.slice(-50); } break;
     case 'resetDone': m.round = (m.round || 0) + 1; break;
     case 'call': m.calledNum = body.n || null; break;
     case 'agenda': {
