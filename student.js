@@ -220,8 +220,8 @@ function StudentApp({ code, sid, skey, policy, profile, setProfile, lateIntro, o
   };
   const doneBtn = canDone && html`<${DoneButton} done=${isDone} onClick=${toggleDone} />`;
   const showWrap = meta.ended || segItem.key === 'wrap';
-  // One discussion prompt per group: the instructor's pushed prompt replaces the default (first) one. Two Truths and a Lie only shows a pushed theme.
-  const talkText = meta.pushedPrompt || (segItem.key === 'truths' ? null : pool[0]);
+  // One discussion prompt per group: the instructor's pushed prompt replaces the default (first) one. Push-only games (Two Truths and a Lie, Story Relay) show nothing until the instructor pushes.
+  const talkText = meta.pushedPrompt || (seg.pushOnly ? null : pool[0]);
   const groupTalk = canDone && segItem.key !== 'biography' && !seg.card && !!talkText;
   const cardOn = meta.launched && !meta.ended && isGame && seg.card;
 
