@@ -24,12 +24,12 @@ export const gLabel = (g) => G(g).label;
 
 export const GAMES = [
   { key: 'frequency', type: 'connecting', name: 'Frequency', color: '#06b6a4', tagline: 'Find your color group', size: '5–6 people', time: '5–15 min', setting: 'Open room',
-    do: 'Find the others whose phone shows your color and shape.',
-    coach: 'Hold your phone up and find people showing your color and shape. Then huddle up.',
+    do: 'Find the others whose phone shows your color.',
+    coach: 'Hold your phone up and find people showing your color. Then huddle up.',
     why: 'The hardest moment for a new student is walking into a room full of strangers. Frequency gives you a mission the second you sit down: find the others whose phones match.',
-    steps: ['Your phone is already showing your color and shape.', 'Look around for others showing the same one.', 'When your group is together, open the Group tab for a question.', 'Talk it through until the next game starts.'],
-    proj: ['Hold your phone up', 'Find phones with your color + shape', 'Together? Open Group for a question'],
-    say: 'Hold your phone up. Find everyone whose screen matches yours — same color, same shape. Once your group is together, open the Group tab for a question to talk about. You’ve got about seven minutes.',
+    steps: ['Your phone is already showing your color.', 'Look around for others showing the same one.', 'When your group is together, open the Group tab for a question.', 'Talk it through until the next game starts.'],
+    proj: ['Hold your phone up', 'Find phones with your color', 'Together? Open Group for a question'],
+    say: 'Hold your phone up. Find everyone whose screen color matches yours. Once your group is together, look at the question to talk about. You’ve got ___ minutes.',
     prompts: ['What’s a food you could eat every day and never get tired of?', 'One place you’ve always wanted to visit?', 'A show you’ve rewatched more than once?', 'Morning person or night owl? Make your case.', 'What made you pick this class? One sentence.'] },
   { key: 'molecules', type: 'connecting', name: 'Community Molecules', color: '#7a4dff', tagline: 'Form groups on the fly', size: 'Whole class', time: '10–15 min', setting: 'Cleared floor',
     do: 'Listen for the number called and form a group of exactly that size.',
