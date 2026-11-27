@@ -46,9 +46,9 @@ const RESERVED = ['TEACH', 'SCREEN', 'API', 'INDEX', 'SHARED', 'VENDOR'];
 
 const DEFAULT_AGENDA = [{ key: 'welcome', mins: 3 }, { key: 'frequency', mins: 7 }, { key: 'truths', mins: 7 }, { key: 'wrap', mins: 3 }];
 const DEFAULT_Q = [
-  { id: 'interest', text: 'What’s something you’re into outside of school?', active: true },
-  { id: 'hope', text: 'One thing you hope to learn this semester?', active: true },
-  { id: 'comfort', text: 'What helps you feel comfortable in a group?', active: true },
+  { id: 'interest', text: 'What’s something you’re into outside of school?', active: false },
+  { id: 'hope', text: 'One thing you hope to learn this semester?', active: false },
+  { id: 'comfort', text: 'What helps you feel comfortable in a group?', active: false },
   { id: 'knowme', text: 'One thing you want your professor to know about you?', active: false },
   { id: 'hobby', text: 'What are your hobbies?', active: false },
 ];
@@ -501,7 +501,7 @@ async function handle(req) {
   switch (b.op) {
     case 'check': {
       const meta = jparse((await redis([['GET', K(code, 'meta')]]))[0], null);
-      return meta ? { exists: true, name: meta.name, emailPolicy: policyOf(meta.emailPolicy || DEFAULT_EMAIL_POLICY) } : { exists: false };
+      return meta ? { exists: true, name: meta.name, emailPolicy: policyOf(meta.emailPolicy || DEFAULT_EMAIL_POLICY), hasQuestions: (meta.introQuestions || []).some(q => q.active) } : { exists: false };
     }
     case 'create': {
       const pin = String(b.pin || '');

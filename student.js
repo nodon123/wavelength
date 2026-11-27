@@ -49,7 +49,7 @@ export function Student({ initialCode }) {
     try {
       const r = await post({ op: 'check', code: c });
       if (!r.exists) { setErr('No class with that code. Check the screen at the front of the room.'); setScreen('code'); return; }
-      setCode(c); setPolicy(r.emailPolicy || null);
+      setCode(c); setPolicy(r.emailPolicy ? { ...r.emailPolicy, hasQuestions: !!r.hasQuestions } : null);
       try { history.replaceState(null, '', '/' + c); } catch (_) {}
       const known = getId(c);
       const emailOk = V().checkEmail(profile.email, r.emailPolicy).ok;
@@ -160,10 +160,10 @@ function ProfileScreen({ code, p, set, err, field, policy, busy, onSubmit }) {
       <div class="label-row"><span>LinkedIn <span style="color:rgba(255,255,255,.5);font-weight:600">· optional</span></span><${VisChip} on=${p.shareLinkedin} onClick=${() => up('shareLinkedin', !p.shareLinkedin)} /></div>
       <${LinkedInField} value=${p.linkedin} onChange=${v => up('linkedin', v)} />
     </div>
-    <button type="button" onClick=${() => up('anon', !p.anon)} style="width:100%;min-height:64px;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px 16px;text-align:left">
+    ${policy && policy.hasQuestions && html`<button type="button" onClick=${() => up('anon', !p.anon)} style="width:100%;min-height:64px;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px 16px;text-align:left">
       <span style="flex:1"><span style="display:block;font-size:15px;font-weight:800">Answer teacher questions anonymously</span><span style="display:block;font-size:13px;color:rgba(255,255,255,.6);margin-top:3px;line-height:1.35">Your teacher sees your answers without your name.</span></span>
       <${Toggle} on=${p.anon} />
-    </button>
+    </button>`}
     <div style="font-size:12.5px;color:rgba(255,255,255,.5);line-height:1.45">Your name and group are visible to your class. Your email and LinkedIn are private by default. Tap “Only you” to share one — then only classmates you connect with (and your teacher’s roster) can see it.</div>
     ${err && field !== 'email' && html`<div class="err" role="alert">${err}</div>`}
     <div style="flex:1"></div>

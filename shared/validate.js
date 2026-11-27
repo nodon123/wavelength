@@ -4,9 +4,9 @@
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.WLValidate = factory();
 }(typeof self !== 'undefined' ? self : this, function () {
-  // Default per-class email policy. `domains` stays empty for now; later a class can be limited to
+  // Default per-class email policy: email is optional unless the professor requires it. `domains` stays empty for now; later a class can be limited to
   // e.g. ['purdue.edu'], which also accepts subdomains such as 'cs.purdue.edu'.
-  var DEFAULT_EMAIL_POLICY = { required: true, domains: [] };
+  var DEFAULT_EMAIL_POLICY = { required: false, domains: [] };
 
   function policyOf(p) {
     p = p || {};

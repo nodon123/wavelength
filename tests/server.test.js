@@ -157,6 +157,8 @@ test('email validator accepts real addresses and explains bad ones', () => {
 
 test('join and profile enforce the class email policy', async () => {
   const code = await makeClass();
+  assert.equal((await post({ op: 'check', code })).emailPolicy.required, false, 'email is optional by default');
+  await fac(code, 'settings', { emailPolicy: { required: true } });
   await fails(post({ op: 'join', code, profile: { name: 'Nia', email: 'nia@school' } }), 400, 'email');
   await fails(post({ op: 'join', code, profile: { name: 'Nia' } }), 400, 'email');
   const a = await post({ op: 'join', code, profile: { name: 'Nia', email: 'Nia@School.EDU' } });
