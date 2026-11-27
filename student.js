@@ -9,6 +9,29 @@ const V = () => window.WLValidate;
 const idKey = (c) => 'wl:id:' + c;
 const getId = (c) => ls.get(idKey(c), null);
 
+// LinkedIn field with a button that opens the student's own profile (LinkedIn's /in/me/ shortcut)
+// so they can tap ⋯ → Copy link and paste it back. Pasted links are cleaned up to linkedin.com/in/handle.
+function LinkedInField({ value, onChange, onCommit, compact }) {
+  const [err, setErr] = useState('');
+  const [canPaste] = useState(() => !!(navigator.clipboard && navigator.clipboard.readText));
+  const commit = (raw) => {
+    const r = V().checkLinkedin(raw);
+    if (!r.ok) { setErr(r.error); return; }
+    setErr(''); onChange(r.value); if (onCommit) onCommit(r.value);
+  };
+  const paste = async () => { try { commit(await navigator.clipboard.readText()); } catch (e) { setErr('Couldn’t read your clipboard. Long-press the box and choose Paste.'); } };
+  const pad = compact ? { padding: '12px 14px', fontSize: '14.5px', background: 'rgba(255,255,255,.1)' } : {};
+  return html`<div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <input class="field" style=${{ ...pad, ...(err ? { borderColor: '#ff8a7e' } : {}) }} type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" value=${value} onInput=${e => { onChange(e.target.value); if (err) setErr(''); }} onBlur=${e => commit(e.target.value)} onPaste=${e => { const t = (e.clipboardData || window.clipboardData).getData('text'); if (t) { e.preventDefault(); commit(t); } }} placeholder="Paste your LinkedIn link" aria-label="LinkedIn" aria-invalid=${!!err} />
+      ${canPaste && html`<button type="button" class="btn-sm" style="flex-shrink:0;background:rgba(255,255,255,.16);color:#fff" onClick=${paste}>Paste</button>`}
+    </div>
+    <a href="https://www.linkedin.com/in/me/" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-size:13px;font-weight:800;color:#fff;text-decoration:underline">Open LinkedIn to copy your link ↗</a>
+    <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:3px;line-height:1.4">On your profile, tap ⋯ → Copy link, then come back and paste.</div>
+    ${err && html`<div class="err" role="alert" style="margin-top:6px">${err}</div>`}
+  </div>`;
+}
+
 export function Student({ initialCode }) {
   const [code, setCode] = useState(initialCode || '');
   const [screen, setScreen] = useState(initialCode ? 'checking' : 'landing');
@@ -135,7 +158,7 @@ function ProfileScreen({ code, p, set, err, field, policy, busy, onSubmit }) {
     </div>
     <div>
       <div class="label-row"><span>LinkedIn <span style="color:rgba(255,255,255,.5);font-weight:600">· optional</span></span><${VisChip} on=${p.shareLinkedin} onClick=${() => up('shareLinkedin', !p.shareLinkedin)} /></div>
-      <input class="field" value=${p.linkedin} onInput=${e => up('linkedin', e.target.value)} placeholder="e.g. linkedin.com/in/you" aria-label="LinkedIn" />
+      <${LinkedInField} value=${p.linkedin} onChange=${v => up('linkedin', v)} />
     </div>
     <button type="button" onClick=${() => up('anon', !p.anon)} style="width:100%;min-height:64px;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px 16px;text-align:left">
       <span style="flex:1"><span style="display:block;font-size:15px;font-weight:800">Answer teacher questions anonymously</span><span style="display:block;font-size:13px;color:rgba(255,255,255,.6);margin-top:3px;line-height:1.35">Your teacher sees your answers without your name.</span></span>
@@ -526,8 +549,8 @@ function ConnectTab({ auth, policy, data, me, profile, saveProfile, toast, refre
         </div>
         ${emErr && html`<div class="err" role="alert" style="margin-top:6px">${emErr}</div>`}
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <input class="field" style="padding:12px 14px;font-size:14.5px;background:rgba(255,255,255,.1)" value=${li} onInput=${e => setLi(e.target.value)} onBlur=${() => li !== profile.linkedin && saveProfile({ linkedin: li })} placeholder="e.g. linkedin.com/in/you (optional)" aria-label="Your LinkedIn" />
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1"><${LinkedInField} compact value=${li} onChange=${setLi} onCommit=${v => v !== (profile.linkedin || '') && saveProfile({ linkedin: v })} /></div>
         <${VisChip} on=${profile.shareLinkedin} onClick=${() => saveProfile({ shareLinkedin: !profile.shareLinkedin })} />
       </div>
     </div>

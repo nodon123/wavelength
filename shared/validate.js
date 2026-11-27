@@ -46,5 +46,21 @@
     return { ok: true, value: local + '@' + domain };
   }
 
-  return { DEFAULT_EMAIL_POLICY: DEFAULT_EMAIL_POLICY, policyOf: policyOf, checkEmail: checkEmail };
+  // LinkedIn is optional. Accepts a bare handle, "linkedin.com/in/handle", or a full pasted URL
+  // (https://, www., mobile "Copy link" tracking params, trailing slash) and returns
+  // { ok: true, value: 'linkedin.com/in/handle' } or { ok: false, error }. Empty input is fine.
+  function checkLinkedin(input) {
+    var raw = String(input == null ? '' : input).trim();
+    if (!raw) return { ok: true, value: '' };
+    var s = raw.replace(/^https?:\/\//i, '').replace(/^(www|[a-z]{2})\./i, '').replace(/[?#].*$/, '').replace(/\/+$/, '');
+    var m = s.match(/^linkedin\.com\/(?:in|pub)\/([^\/]+)/i);
+    var handle = m ? m[1] : (/^[^\/\s.]+$/.test(s) ? s : '');
+    try { handle = decodeURIComponent(handle); } catch (e) { /* keep as typed */ }
+    if (!handle) return { ok: false, error: 'That doesn’t look like a LinkedIn profile link. Open your profile, tap ⋯ → Copy link, and paste it here.' };
+    if (handle.toLowerCase() === 'me') return { ok: false, error: 'That’s the shortcut link. On your profile, tap ⋯ → Copy link and paste that one.' };
+    if (!/^[A-Za-z0-9\u00C0-\u024F_%-]{3,100}$/.test(handle)) return { ok: false, error: 'That handle has a character LinkedIn doesn’t use. Copy the link from your profile instead.' };
+    return { ok: true, value: 'linkedin.com/in/' + handle };
+  }
+
+  return { DEFAULT_EMAIL_POLICY: DEFAULT_EMAIL_POLICY, policyOf: policyOf, checkEmail: checkEmail, checkLinkedin: checkLinkedin };
 }));
