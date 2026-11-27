@@ -96,7 +96,7 @@ function TeachApp({ code, pin, onSignOut }) {
   const online = (p) => p.nophone || (data.seen[p.id] && nowMs - data.seen[p.id] < 45000);
   const ctx = { data, meta, T, act, code, pin, active, away, online, showToast, setView, setGuide, nowMs, offset, refresh };
   const live = meta.launched && !meta.ended;
-  const nav = [['run', 'Run'], ['groups', 'Groups'], ['agenda', 'Agenda & prompts'], ['insights', 'Insights'], ['wrap', 'Wrap-up']];
+  const nav = [['run', 'Run'], ['groups', 'Groups'], ['agenda', 'Agenda'], ['insights', 'Insights'], ['wrap', 'Wrap-up']];
   const openScreen = () => window.open('/screen?c=' + code, 'wl-screen');
 
   return html`<div class="t-shell">
@@ -114,8 +114,6 @@ function TeachApp({ code, pin, onSignOut }) {
     <div class="t-body">
       <div class="t-nav">
         ${nav.map(([k, l]) => html`<button class=${view === k ? 'on' : ''} onClick=${() => setView(k)}>${l}</button>`)}
-        <div style="flex:1"></div>
-        <div class="panel" style="padding:14px"><div class="k">Connections made</div><div style="font-size:30px;font-weight:900;margin-top:4px">${(data.connTotals || {}).accepted || 0}</div><div style="font-size:12.5px;color:rgba(255,255,255,.6)">accepted between students${(data.connTotals || {}).pending ? ' · ' + data.connTotals.pending + ' waiting' : ''}</div></div>
       </div>
       <div class="t-main">
         ${view === 'run' && !meta.launched && html`<${RunPre} ...${ctx} openScreen=${openScreen} />`}
@@ -219,10 +217,12 @@ function RunLive({ data, meta, T, act, active, online, setView, setGuide, openSc
   const offline = active.filter(p => !online(p));
   const say = (meta.scripts && meta.scripts[T.item.key]) || seg.say;
   const endAt = meta.launched ? clock(nowMs - T.classElapsed * 1000, meta.budget * 60) : '';
+  const [showPlan, setShowPlan] = useState(false);
+  const [more, setMore] = useState(false);
   return html`<div class="col" style="gap:16px">
     <div class="panel">
-      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span class="k">Timeline</span><span style="font-size:13.5px;color:rgba(255,255,255,.65)">${T.planTotal} min planned · ${meta.budget} min budget</span><span style="flex:1"></span><span style="font-size:14px;font-weight:700">${meta.ended ? 'Class ended' : html`Planned end ${endAt} · <span style="color:#8fb0ff">${Math.max(0, Math.ceil((meta.budget * 60 - T.classElapsed) / 60))} min left</span>`}</span></div>
-      <${Timeline} meta=${meta} T=${T} />
+      <div role="button" tabindex="0" aria-expanded=${showPlan} onClick=${() => setShowPlan(!showPlan)} onKeyDown=${e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowPlan(!showPlan); } }} style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;cursor:pointer"><span class="k">Plan ${showPlan ? '▴' : '▾'}</span><span style="font-size:13.5px;color:rgba(255,255,255,.65)">${T.planTotal} min planned · ${meta.budget} min budget</span><span style="flex:1"></span><span style="font-size:14px;font-weight:700">${meta.ended ? 'Class ended' : html`Planned end ${endAt} · <span style="color:#8fb0ff">${Math.max(0, Math.ceil((meta.budget * 60 - T.classElapsed) / 60))} min left</span>`}</span></div>
+      ${showPlan && html`<${Timeline} meta=${meta} T=${T} />`}
       ${T.overMin > 0 && !meta.ended && html`<div style="display:flex;align-items:center;gap:12px;margin-top:12px;background:rgba(255,107,94,.1);border:1px solid rgba(255,107,94,.35);border-radius:12px;padding:10px 14px"><span style="flex:1;font-size:14px;color:#ffb3aa;font-weight:700">On pace to run ${T.overMin} min over your ${meta.budget}-min plan. Trim a game or hit Next early.</span><button class="gbtn" onClick=${() => setView('agenda')}>Edit agenda</button></div>`}
     </div>
     <div class="grid-run">
@@ -244,22 +244,25 @@ function RunLive({ data, meta, T, act, active, online, setView, setGuide, openSc
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:11.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#9fb9ff">Say this</span><button class="gbtn" style="min-height:36px;font-size:13px" onClick=${() => act('proj', { mode: 'instructions', key: null }, 'Projector: instructions')}>Show instructions on projector</button></div>
           <div style="font-size:19px;line-height:1.5;margin-top:8px">“${say}”</div></div>`}
         ${!meta.ended && T.item.key === 'molecules' && html`<div><div class="k" style="margin-bottom:10px">Call a group size</div><div style="display:flex;gap:8px">${[2, 3, 4, 5, 6].map(n => html`<button onClick=${() => act('call', { n }, 'Called groups of ' + n)} style=${{ flex: 1, minHeight: '52px', borderRadius: '14px', fontSize: '20px', fontWeight: 900, background: meta.calledNum === n ? '#7a4dff' : 'rgba(255,255,255,.06)' }}>${n}</button>`)}</div></div>`}
-        ${!meta.ended && html`<${PushPrompts} meta=${meta} T=${T} act=${act} />`}
+        ${!meta.ended && T.item.key !== 'welcome' && T.item.key !== 'wrap' && html`<${PushPrompts} meta=${meta} T=${T} act=${act} />`}
       </div>
       <div class="col">
         ${!meta.ended && T.item.key !== 'welcome' && T.item.key !== 'wrap' && html`<${DonePanel} data=${data} meta=${meta} active=${active} act=${act} />`}
+        ${dr && html`<div class="panel"><div style="background:rgba(245,163,0,.12);border:1px solid rgba(245,163,0,.35);border-radius:12px;padding:10px 12px"><div style="font-size:13px;color:#f5c26b;font-weight:700;line-height:1.35">Sizes drifted. ${dr}</div><button class="gbtn gold" style="margin-top:8px;min-height:38px;font-size:13px" onClick=${() => setView('groups')}>Rebalance in Groups</button></div></div>`}
+        ${offline.length > 0 && html`<div class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="k">Quiet flags</span><span style="font-size:12px;color:rgba(255,255,255,.45)">Only on your screen</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">${offline.slice(0, 8).map(p => html`<div style="display:flex;align-items:center;gap:10px;padding:4px 0"><span style="width:8px;height:8px;border-radius:50%;background:#f5c26b;flex-shrink:0"></span><span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:700">${p.name}</span><span style="display:block;font-size:12px;color:rgba(255,255,255,.5)">Phone not responding · may have left or locked their screen</span></span></div>`)}</div></div>`}
+        <button onClick=${() => setMore(!more)} aria-expanded=${more} style="min-height:44px;font-size:14px;font-weight:800;color:#8fb0ff;text-align:left;padding:0 4px">${more ? 'Hide details ▴' : 'More: progress, groups, projector ▾'}</button>
+        ${more && html`<div style="display:contents">
         <div class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="k">Class progress</span><span style="font-size:22px;font-weight:900">${meta.ended ? 100 : Math.round(T.segIdx / meta.agenda.length * 100)}%</span></div>
           <div class="bar" style="margin-top:10px"><div style=${{ width: (meta.ended ? 100 : T.segIdx / meta.agenda.length * 100) + '%', background: '#6f9bff' }}></div></div>
           <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:rgba(255,255,255,.6)"><span>${active.length - offline.length} of ${active.length} phones connected</span><button onClick=${() => setView('insights')} style="font-weight:800;color:#8fb0ff">Per student →</button></div></div>
         <div class="panel" style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="k">Groups</span><button onClick=${() => setView('groups')} style="font-size:13px;font-weight:800;color:#8fb0ff">Regroup →</button></div>
           <${GroupBars} data=${data} meta=${meta} active=${active} />
-          ${dr && html`<div style="background:rgba(245,163,0,.12);border:1px solid rgba(245,163,0,.35);border-radius:12px;padding:10px 12px;margin-top:4px"><div style="font-size:13px;color:#f5c26b;font-weight:700;line-height:1.35">Sizes drifted. ${dr}</div><button class="gbtn gold" style="margin-top:8px;min-height:38px;font-size:13px" onClick=${() => setView('groups')}>Rebalance in Groups</button></div>`}</div>
-        <div class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="k">Quiet flags</span><span style="font-size:12px;color:rgba(255,255,255,.45)">Only on your screen</span></div>
-          ${!offline.length && html`<div style="font-size:13.5px;color:rgba(255,255,255,.6);margin-top:10px">Every phone is connected.</div>`}
-          <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">${offline.slice(0, 8).map(p => html`<div style="display:flex;align-items:center;gap:10px;padding:4px 0"><span style="width:8px;height:8px;border-radius:50%;background:#f5c26b;flex-shrink:0"></span><span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:700">${p.name}</span><span style="display:block;font-size:12px;color:rgba(255,255,255,.5)">Phone not responding · may have left or locked their screen</span></span></div>`)}</div></div>
+          </div>
         <div class="panel"><div class="k">On the projector</div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${[['join', 'Join screen'], ['instructions', 'Instructions'], ['groups', 'Groups by name'], ['off', 'Blank']].map(([m, l]) => html`<button onClick=${() => act('proj', { mode: m })} style=${{ minHeight: '36px', padding: '0 10px', borderRadius: '9px', fontSize: '12.5px', fontWeight: 800, background: meta.projMode === m ? '#2e6bff' : 'rgba(255,255,255,.06)', color: meta.projMode === m ? '#fff' : 'rgba(255,255,255,.7)' }}>${l}</button>`)}</div>
           <button class="gbtn" style="margin-top:12px;width:100%" onClick=${openScreen}>Open projector screen ↗</button></div>
+        </div>`}
       </div>
     </div>
   </div>`;
